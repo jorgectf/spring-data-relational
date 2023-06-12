@@ -42,6 +42,7 @@ public class RelationalMappingContext
 	private boolean forceQuote = true;
 
 	private final ExpressionEvaluator expressionEvaluator = new ExpressionEvaluator(EvaluationContextProvider.DEFAULT);
+	private boolean singleQueryLoadingEnabled = true;
 
 	/**
 	 * Creates a new {@link RelationalMappingContext}.
@@ -122,6 +123,15 @@ public class RelationalMappingContext
 		applyDefaults(persistentProperty);
 
 		return persistentProperty;
+	}
+
+
+	public boolean isSingleQueryLoadingEnabled() {
+		return singleQueryLoadingEnabled;
+	}
+
+	public void setSingleQueryLoadingEnabled(boolean singleQueryLoadingEnabled) {
+		this.singleQueryLoadingEnabled = singleQueryLoadingEnabled;
 	}
 
 	protected void applyDefaults(BasicRelationalPersistentProperty persistentProperty) {
