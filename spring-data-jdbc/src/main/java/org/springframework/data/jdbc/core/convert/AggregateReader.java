@@ -37,7 +37,7 @@ public class AggregateReader<T> {
 
 	private final RelationalMappingContext mappingContext;
 	private final RelationalPersistentEntity<T> aggregate;
-	private final AliasFactory aliasFactory = new AliasFactory();
+	private final AliasFactory aliasFactory;
 	private final SingleQuerySqlGenerator sqlGenerator;
 	private final JdbcConverter converter;
 	private final NamedParameterJdbcOperations jdbcTemplate;
@@ -52,6 +52,7 @@ public class AggregateReader<T> {
 		this.jdbcTemplate = jdbcTemplate;
 
 		this.sqlGenerator = new SingleQuerySqlGenerator(mappingContext, dialect, aggregate);
+		this.aliasFactory = sqlGenerator.getAliasFactory();
 	}
 
 	public List<T> findAll() {

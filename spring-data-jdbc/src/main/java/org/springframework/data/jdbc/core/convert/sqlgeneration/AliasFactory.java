@@ -28,7 +28,7 @@ public class AliasFactory {
 	private int counter = 0;
 
 	private static String sanatize(String name) {
-		return name.replaceAll("[^\\w]", "");
+		return name.replaceAll("\\W", "");
 	}
 
 	public String getAlias(PersistentPropertyPathExtension path) {
