@@ -45,16 +45,12 @@ class SingleQuerySqlGeneratorUnitTests {
 	Dialect dialect = createDialect();
 
 	@Test
-	void createSelectForNoReference() {
+	void createSelectForTrivialAggregate() {
 
 		SingleQuerySqlGenerator sqlGenerator = new SingleQuerySqlGenerator(context, dialect, context.getRequiredPersistentEntity(SimpleEntity.class));
 		AliasFactory aliases = sqlGenerator.getAliasFactory();
 
 		String sql = sqlGenerator.findAll();
-
-		/**
-		 * select simple_entity_rn, id-alias, name-alias from (select 1 as simple_entity_rn, id as id-alias, name as name-alias from simple_entity) as table-alias
-		 */
 
 		assertThatParsed(sql) //
 				.hasExactlyColumns( //
@@ -68,6 +64,31 @@ class SingleQuerySqlGeneratorUnitTests {
 						col("\"id\"").as(aliases.getAlias(path( "id"))), //
 						col("\"name\"").as(aliases.getAlias(path( "name"))) //
 				);
+	}
+	@Test
+	void createSelectForTrivialAggregateById() {
+
+		SingleQuerySqlGenerator sqlGenerator = new SingleQuerySqlGenerator(context, dialect, context.getRequiredPersistentEntity(SimpleEntity.class));
+		AliasFactory aliases = sqlGenerator.getAliasFactory();
+
+		String sql = sqlGenerator.findById();
+
+		System.out.println(sql);
+
+		assertThatParsed(sql) //
+				.hasExactlyColumns( //
+						aliases.getRowNumberAlias(path()), //
+						aliases.getAlias(path( "id")), //
+						aliases.getAlias(path( "name")) //
+				) //
+				.hasInlineViewSelectingFrom("\"simple_entity\"") //
+				.hasExactlyColumns( //
+						lit(1).as(aliases.getRowNumberAlias(path())) , //
+						col("\"id\"").as(aliases.getAlias(path( "id"))), //
+						col("\"name\"").as(aliases.getAlias(path( "name"))) //
+				)
+				.hasWhere("\"simple_entity\".\"id\" = :id")
+		;
 	}
 
 	private PersistentPropertyPathExtension path() {

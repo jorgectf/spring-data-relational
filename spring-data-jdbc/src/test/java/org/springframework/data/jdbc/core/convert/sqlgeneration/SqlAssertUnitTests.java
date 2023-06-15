@@ -30,7 +30,34 @@ class SqlAssertUnitTests {
 	void givesProperNullPointerExceptionWhenSqlIsNull() {
 		assertThatThrownBy(() -> SqlAssert.assertThatParsed(null)).isInstanceOf(NullPointerException.class);
 	}
+	@Nested
+	class AssertWhereClause {
+		@Test
+		void assertWhereClause() {
+			SqlAssert.assertThatParsed("select x from t where z > y").hasWhere("z > y");
+		}
 
+			@Test
+		void asserWhereClauseFailure() {
+
+			SqlAssert sqlAssert = SqlAssert.assertThatParsed("select x from t where z > y");
+
+			assertThatThrownBy(() -> sqlAssert.hasWhere("z = y")) //
+					.hasMessageContaining("z = y") //
+					.hasMessageContaining("z > y");
+		}
+
+		@Test
+		void asserWhereClauseFailureNoWhereClause() {
+
+			SqlAssert sqlAssert = SqlAssert.assertThatParsed("select x from t");
+
+			assertThatThrownBy(() -> sqlAssert.hasWhere("z = y")) //
+					.hasMessageContaining("z = y") //
+					.hasMessageContaining("no where clause");
+		}
+
+	}
 	@Nested
 	class AssertColumns {
 		@Test

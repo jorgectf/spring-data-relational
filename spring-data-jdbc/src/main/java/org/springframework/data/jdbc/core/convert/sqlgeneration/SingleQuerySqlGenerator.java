@@ -27,23 +27,17 @@ import org.springframework.data.relational.core.mapping.PersistentPropertyPathEx
 import org.springframework.data.relational.core.mapping.RelationalMappingContext;
 import org.springframework.data.relational.core.mapping.RelationalPersistentEntity;
 import org.springframework.data.relational.core.mapping.RelationalPersistentProperty;
-import org.springframework.data.relational.core.sql.AliasedExpression;
-import org.springframework.data.relational.core.sql.Expression;
-import org.springframework.data.relational.core.sql.Expressions;
-import org.springframework.data.relational.core.sql.InlineQuery;
-import org.springframework.data.relational.core.sql.SQL;
-import org.springframework.data.relational.core.sql.SelectBuilder;
-import org.springframework.data.relational.core.sql.StatementBuilder;
-import org.springframework.data.relational.core.sql.Table;
+import org.springframework.data.relational.core.sql.*;
 import org.springframework.data.relational.core.sql.render.SqlRenderer;
 
 public class SingleQuerySqlGenerator {
 
 	private final RelationalMappingContext context;
 	private final Dialect dialect;
-	private final RelationalPersistentEntity<?> aggregate;
-
 	private final AliasFactory aliases = new AliasFactory();
+
+	private final RelationalPersistentEntity<?> aggregate;
+	private final Table table;
 
 	public SingleQuerySqlGenerator(RelationalMappingContext context, Dialect dialect,
 			RelationalPersistentEntity<?> aggregate) {
@@ -51,31 +45,39 @@ public class SingleQuerySqlGenerator {
 		this.context = context;
 		this.dialect = dialect;
 		this.aggregate = aggregate;
+
+		this.table = Table.create(aggregate.getTableName());
 	}
 
 	public String findAll() {
-		return createSelect();
+		return createSelect(null);
 	}
 
 	public String findById() {
-		return createSelect();
+
+		PersistentPropertyPathExtension idPPPE = new PersistentPropertyPathExtension(context, aggregate).extendBy(aggregate.getIdProperty());
+		Condition condition = Conditions.isEqual(
+				table.column(idPPPE.getColumnName()),
+				Expressions.just(":id"));
+		return createSelect(condition);
 	}
 
 	public String findAllById() {
-		return createSelect();
+		return createSelect(null);
 	}
 
-	private String createSelect() {
+	private String createSelect(Condition condition) {
 
-		InlineQuery inlineQuery = createInlineQuery();
+		InlineQuery inlineQuery = createInlineQuery(condition);
 
 		PersistentPropertyPaths<?, RelationalPersistentProperty> paths = context
 				.findPersistentPropertyPaths(aggregate.getType(), p -> true);
 
 		List<Expression> columns = new ArrayList<>();
-		Expression rownumber = Expressions.just(aliases.getRowNumberAlias(new PersistentPropertyPathExtension(context, aggregate)));
+		Expression rownumber = Expressions
+				.just(aliases.getRowNumberAlias(new PersistentPropertyPathExtension(context, aggregate)));
 		columns.add(rownumber);
-		
+
 		for (PersistentPropertyPath<RelationalPersistentProperty> ppp : paths) {
 
 			PersistentPropertyPathExtension path = new PersistentPropertyPathExtension(context, ppp);
@@ -88,15 +90,14 @@ public class SingleQuerySqlGenerator {
 		return SqlRenderer.create(new RenderContextFactory(dialect).createRenderContext()).render(select.build());
 	}
 
-	private InlineQuery createInlineQuery() {
-
-		Table table = Table.create(aggregate.getTableName());
+	private InlineQuery createInlineQuery(Condition condition) {
 
 		PersistentPropertyPaths<?, RelationalPersistentProperty> paths = context
 				.findPersistentPropertyPaths(aggregate.getType(), p -> true);
 
 		List<Expression> columns = new ArrayList<>();
-		Expression rownumber = new AliasedExpression(SQL.literalOf(1), aliases.getRowNumberAlias(new PersistentPropertyPathExtension(context, aggregate)));
+		Expression rownumber = new AliasedExpression(SQL.literalOf(1),
+				aliases.getRowNumberAlias(new PersistentPropertyPathExtension(context, aggregate)));
 
 		columns.add(rownumber);
 		for (PersistentPropertyPath<RelationalPersistentProperty> ppp : paths) {
@@ -106,9 +107,12 @@ public class SingleQuerySqlGenerator {
 			columns.add(table.column(path.getColumnName()).as(aliases.getAlias(path)));
 		}
 
-		SelectBuilder.SelectFromAndJoin select = StatementBuilder.select(columns).from(table);
+		SelectBuilder.SelectWhere select = StatementBuilder.select(columns).from(table);
 
-		InlineQuery inlineQuery = InlineQuery.create(select.build(), aliases.getAlias(new PersistentPropertyPathExtension(context, aggregate)));
+		SelectBuilder.BuildSelect buildSelect = condition != null ? select.where(condition) : select;
+
+		InlineQuery inlineQuery = InlineQuery.create(buildSelect.build(),
+				aliases.getAlias(new PersistentPropertyPathExtension(context, aggregate)));
 		return inlineQuery;
 	}
 

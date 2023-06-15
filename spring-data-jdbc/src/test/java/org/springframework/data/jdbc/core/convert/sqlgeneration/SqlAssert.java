@@ -17,6 +17,7 @@
 package org.springframework.data.jdbc.core.convert.sqlgeneration;
 
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
@@ -25,6 +26,8 @@ import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectItem;
+import net.sf.jsqlparser.statement.select.SpecialSubSelect;
+import net.sf.jsqlparser.statement.select.SubSelect;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,8 +35,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import net.sf.jsqlparser.statement.select.SpecialSubSelect;
-import net.sf.jsqlparser.statement.select.SubSelect;
 import org.assertj.core.api.AbstractAssert;
 import org.junit.jupiter.api.Assertions;
 
@@ -115,7 +116,7 @@ class SqlAssert extends AbstractAssert<SqlAssert, PlainSelect> {
 					but
 					  %s
 					  were not expected
-					""",actual, preparedExpectedColumns,  unmatchedSelectItems);
+					""", actual, preparedExpectedColumns, unmatchedSelectItems);
 		}
 		if (unmatchedSelectItems.isEmpty()) {
 			throw failureWithActualExpected(actual, preparedExpectedColumns, """
@@ -126,18 +127,35 @@ class SqlAssert extends AbstractAssert<SqlAssert, PlainSelect> {
 					but
 					  %s
 					  were not present
-					""",actual, preparedExpectedColumns,  unmatchedPatterns);
+					""", actual, preparedExpectedColumns, unmatchedPatterns);
 		}
-			throw failureWithActualExpected(actual, preparedExpectedColumns, """
-					Expected
-					  %s
-					to select the columns
-					  %s
-					but
-					  %s
-					  were not present and
-					  %s
-					  were not expected""",actual, preparedExpectedColumns, unmatchedPatterns, unmatchedSelectItems);
+		throw failureWithActualExpected(actual, preparedExpectedColumns, """
+				Expected
+				  %s
+				to select the columns
+				  %s
+				but
+				  %s
+				  were not present and
+				  %s
+				  were not expected""", actual, preparedExpectedColumns, unmatchedPatterns, unmatchedSelectItems);
+	}
+
+	public SqlAssert hasWhere(String whereClause) {
+
+		Expression where = actual.getWhere();
+
+		if (where == null) {
+			throw failureWithActualExpected(actual, "a query containing " + whereClause,
+					"expected %s to have the where clause %s but it has no where clause", actual, whereClause);
+		}
+
+		if (!where.toString().equals(whereClause)) {
+			throw failureWithActualExpected(actual, "a query containing " + whereClause,
+					"expected %s to have the where clause %s", actual, whereClause);
+		}
+
+		return this;
 	}
 
 	private String prepare(ColumnPattern[] columns) {
@@ -146,15 +164,16 @@ class SqlAssert extends AbstractAssert<SqlAssert, PlainSelect> {
 
 	SqlAssert hasInlineViewSelectingFrom(String tableName) {
 
-		Optional<PlainSelect> matchingSelect = getSubSelects(actual).filter(ps -> (ps.getFromItem() instanceof Table t)&& t.getName().equals(tableName)).findFirst();
+		Optional<PlainSelect> matchingSelect = getSubSelects(actual)
+				.filter(ps -> (ps.getFromItem()instanceof Table t) && t.getName().equals(tableName)).findFirst();
 
 		if (matchingSelect.isEmpty()) {
-			throw failureWithActualExpected(actual, "Subselect from " + tableName, "%s is expected to contain a subselect selecting from %s but doesn't", actual, tableName);
+			throw failureWithActualExpected(actual, "Subselect from " + tableName,
+					"%s is expected to contain a subselect selecting from %s but doesn't", actual, tableName);
 		}
 
 		return new SqlAssert(matchingSelect.get());
 	}
-
 
 	private static Stream<PlainSelect> getSubSelects(PlainSelect select) {
 
@@ -186,4 +205,5 @@ class SqlAssert extends AbstractAssert<SqlAssert, PlainSelect> {
 		}
 		return fromStream;
 	}
+
 }

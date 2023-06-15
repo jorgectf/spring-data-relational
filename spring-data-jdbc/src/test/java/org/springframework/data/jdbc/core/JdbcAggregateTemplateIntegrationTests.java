@@ -197,6 +197,23 @@ class JdbcAggregateTemplateIntegrationTests {
 		return entity;
 	}
 
+
+	@Test // GH-1446
+	void findById() {
+
+		WithInsertOnly entity = new WithInsertOnly();
+		entity.insertOnly = "entity";
+		entity = template.save(entity);
+
+		WithInsertOnly other = new WithInsertOnly();
+		other.insertOnly = "other";
+		other = template.save(other);
+
+
+		assertThat(template.findById(entity.id, WithInsertOnly.class).insertOnly).isEqualTo("entity");
+		assertThat(template.findById(other.id, WithInsertOnly.class).insertOnly).isEqualTo("other");
+	}
+
 	@Test // DATAJDBC-112
 	@EnabledOnFeature(SUPPORTS_QUOTED_IDS)
 	void saveAndLoadAnEntityWithReferencedEntityById() {
