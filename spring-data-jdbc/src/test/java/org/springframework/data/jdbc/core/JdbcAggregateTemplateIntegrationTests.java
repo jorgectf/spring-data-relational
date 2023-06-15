@@ -197,7 +197,6 @@ class JdbcAggregateTemplateIntegrationTests {
 		return entity;
 	}
 
-
 	@Test // GH-1446
 	void findById() {
 
@@ -209,9 +208,29 @@ class JdbcAggregateTemplateIntegrationTests {
 		other.insertOnly = "other";
 		other = template.save(other);
 
-
 		assertThat(template.findById(entity.id, WithInsertOnly.class).insertOnly).isEqualTo("entity");
 		assertThat(template.findById(other.id, WithInsertOnly.class).insertOnly).isEqualTo("other");
+	}
+
+	@Test // GH-1446
+	void findAllById() {
+
+		WithInsertOnly entity = new WithInsertOnly();
+		entity.insertOnly = "entity";
+		entity = template.save(entity);
+
+		WithInsertOnly other = new WithInsertOnly();
+		other.insertOnly = "other";
+		other = template.save(other);
+
+		WithInsertOnly yetAnother = new WithInsertOnly();
+		yetAnother.insertOnly = "yetAnother";
+		yetAnother = template.save(yetAnother);
+
+		Iterable<WithInsertOnly> reloadedById = template.findAllById(asList(entity.id, yetAnother.id),
+				WithInsertOnly.class);
+		assertThat(reloadedById).extracting(e -> e.id, e -> e.insertOnly)
+				.containsExactlyInAnyOrder(tuple(entity.id, "entity"), tuple(yetAnother.id, "yetAnother"));
 	}
 
 	@Test // DATAJDBC-112
@@ -294,16 +313,14 @@ class JdbcAggregateTemplateIntegrationTests {
 				.containsExactly("Frozen", "Star", null);
 	}
 
-
 	@Test //
-	@EnabledOnFeature({ SUPPORTS_QUOTED_IDS})
+	@EnabledOnFeature({ SUPPORTS_QUOTED_IDS })
 	void findByNonPropertySortFails() {
 
-		assertThatThrownBy(() -> template.findAll(LegoSet.class,
-				Sort.by("somethingNotExistant"))).isInstanceOf(InvalidPersistentPropertyPath.class);
+		assertThatThrownBy(() -> template.findAll(LegoSet.class, Sort.by("somethingNotExistant")))
+				.isInstanceOf(InvalidPersistentPropertyPath.class);
 
 	}
-
 
 	@Test // DATAJDBC-112
 	@EnabledOnFeature(SUPPORTS_QUOTED_IDS)
@@ -429,8 +446,8 @@ class JdbcAggregateTemplateIntegrationTests {
 		AggregateWithImmutableVersion twiceSavedAggregate2 = template.save(savedAggregatesIterator.next());
 		AggregateWithImmutableVersion twiceSavedAggregate3 = template.save(savedAggregatesIterator.next());
 
-		savedAggregatesIterator = template.updateAll(
-				List.of(savedAggregate1, twiceSavedAggregate2, twiceSavedAggregate3)).iterator();
+		savedAggregatesIterator = template.updateAll(List.of(savedAggregate1, twiceSavedAggregate2, twiceSavedAggregate3))
+				.iterator();
 
 		assertThat(savedAggregatesIterator.next().version).isEqualTo(1);
 		assertThat(savedAggregatesIterator.next().version).isEqualTo(2);
@@ -967,15 +984,13 @@ class JdbcAggregateTemplateIntegrationTests {
 		// Should have an ID and a version of 1.
 		final Long id = aggregate.getId();
 
-		assertThatThrownBy(
-				() -> template.delete(new AggregateWithImmutableVersion(id, 0L)))
-						.describedAs("deleting an aggregate with an outdated version should raise an exception")
-						.isInstanceOf(OptimisticLockingFailureException.class);
+		assertThatThrownBy(() -> template.delete(new AggregateWithImmutableVersion(id, 0L)))
+				.describedAs("deleting an aggregate with an outdated version should raise an exception")
+				.isInstanceOf(OptimisticLockingFailureException.class);
 
-		assertThatThrownBy(
-				() -> template.delete(new AggregateWithImmutableVersion(id, 2L)))
-						.describedAs("deleting an aggregate with a future version should raise an exception")
-						.isInstanceOf(OptimisticLockingFailureException.class);
+		assertThatThrownBy(() -> template.delete(new AggregateWithImmutableVersion(id, 2L)))
+				.describedAs("deleting an aggregate with a future version should raise an exception")
+				.isInstanceOf(OptimisticLockingFailureException.class);
 
 		// This should succeed
 		template.delete(aggregate);
@@ -1105,11 +1120,11 @@ class JdbcAggregateTemplateIntegrationTests {
 	void readEnumArray() {
 
 		EnumArrayOwner entity = new EnumArrayOwner();
-		entity.digits = new Color[]{Color.BLUE};
+		entity.digits = new Color[] { Color.BLUE };
 
 		template.save(entity);
 
-		assertThat(template.findById(entity.id, EnumArrayOwner.class).digits).isEqualTo(new Color[]{Color.BLUE});
+		assertThat(template.findById(entity.id, EnumArrayOwner.class).digits).isEqualTo(new Color[] { Color.BLUE });
 	}
 
 	private <T extends Number> void saveAndUpdateAggregateWithVersion(VersionedAggregate aggregate,
@@ -1209,7 +1224,8 @@ class JdbcAggregateTemplateIntegrationTests {
 	@Data
 	static class LegoSet {
 
-		@Column("id1") @Id private Long id;
+		@Column("id1")
+		@Id private Long id;
 
 		private String name;
 
@@ -1220,7 +1236,8 @@ class JdbcAggregateTemplateIntegrationTests {
 	@Data
 	static class Manual {
 
-		@Column("id2") @Id private Long id;
+		@Column("id2")
+		@Id private Long id;
 		private String content;
 
 	}
@@ -1228,7 +1245,8 @@ class JdbcAggregateTemplateIntegrationTests {
 	@SuppressWarnings("unused")
 	static class OneToOneParent {
 
-		@Column("id3") @Id private Long id;
+		@Column("id3")
+		@Id private Long id;
 		private String content;
 
 		private ChildNoId child;
@@ -1242,7 +1260,8 @@ class JdbcAggregateTemplateIntegrationTests {
 	@SuppressWarnings("unused")
 	static class ListParent {
 
-		@Column("id4") @Id private Long id;
+		@Column("id4")
+		@Id private Long id;
 		String name;
 		@MappedCollection(idColumn = "LIST_PARENT") List<ElementNoId> content = new ArrayList<>();
 	}
@@ -1250,7 +1269,8 @@ class JdbcAggregateTemplateIntegrationTests {
 	@Table("LIST_PARENT")
 	static class ListParentAllArgs {
 
-		@Column("id4") @Id private final Long id;
+		@Column("id4")
+		@Id private final Long id;
 		private final String name;
 		@MappedCollection(idColumn = "LIST_PARENT") private final List<ElementNoId> content = new ArrayList<>();
 
@@ -1561,8 +1581,7 @@ class JdbcAggregateTemplateIntegrationTests {
 	@Table
 	static class WithInsertOnly {
 		@Id Long id;
-		@InsertOnlyProperty
-		String insertOnly;
+		@InsertOnlyProperty String insertOnly;
 	}
 
 	@Configuration

@@ -380,6 +380,7 @@ public class BasicJdbcConverter extends BasicRelationalConverter implements Jdbc
 				PersistentPropertyPathExtension path, Identifier identifier, Object key,
 				JdbcPropertyValueProvider propertyValueProvider,
 				JdbcBackReferencePropertyValueProvider backReferencePropertyValueProvider, ResultSetAccessor accessor) {
+
 			this.entity = entity;
 			this.rootPath = rootPath;
 			this.path = path;
@@ -391,6 +392,7 @@ public class BasicJdbcConverter extends BasicRelationalConverter implements Jdbc
 		}
 
 		private <S> ReadingContext<S> extendBy(RelationalPersistentProperty property) {
+
 			return new ReadingContext<>(
 					(RelationalPersistentEntity<S>) getMappingContext().getRequiredPersistentEntity(property.getActualType()),
 					rootPath.extendBy(property), path.extendBy(property), identifier, key,
