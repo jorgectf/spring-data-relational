@@ -86,7 +86,7 @@ class SingleQuerySqlGeneratorUnitTests {
 						lit(1).as(aliases.getRowNumberAlias(path())) , //
 						col("\"id\"").as(aliases.getAlias(path( "id"))), //
 						col("\"name\"").as(aliases.getAlias(path( "name"))) //
-				)
+				) //
 				.hasWhere("\"simple_entity\".\"id\" = :id")
 		;
 	}
@@ -96,7 +96,7 @@ class SingleQuerySqlGeneratorUnitTests {
 		SingleQuerySqlGenerator sqlGenerator = new SingleQuerySqlGenerator(context, dialect, context.getRequiredPersistentEntity(SimpleEntity.class));
 		AliasFactory aliases = sqlGenerator.getAliasFactory();
 
-		String sql = sqlGenerator.findById();
+		String sql = sqlGenerator.findAllById();
 
 		System.out.println(sql);
 
@@ -111,9 +111,8 @@ class SingleQuerySqlGeneratorUnitTests {
 						lit(1).as(aliases.getRowNumberAlias(path())) , //
 						col("\"id\"").as(aliases.getAlias(path( "id"))), //
 						col("\"name\"").as(aliases.getAlias(path( "name"))) //
-				)
-				.hasWhere("\"simple_entity\".\"id\" in (:ids)")
-		;
+				) //
+				.hasWhere("\"simple_entity\".\"id\" IN (:ids)");
 	}
 
 	private PersistentPropertyPathExtension path() {
