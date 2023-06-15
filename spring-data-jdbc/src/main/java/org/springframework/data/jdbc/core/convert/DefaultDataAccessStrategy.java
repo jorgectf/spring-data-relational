@@ -261,9 +261,9 @@ public class DefaultDataAccessStrategy implements DataAccessStrategy {
 	@Override
 	public <T> T findById(Object id, Class<T> domainType) {
 
-//		if (isSingleSelectQuerySupported(domainType)) {
-//			return singleSelectDelegate.findById(id, domainType);
-//		}
+		if (isSingleSelectQuerySupported(domainType)) {
+			return singleSelectDelegate.findById(id, domainType);
+		}
 
 		String findOneSql = sql(domainType).getFindOne();
 		SqlIdentifierParameterSource parameter = sqlParametersFactory.forQueryById(id, domainType, ID_SQL_PARAMETER);

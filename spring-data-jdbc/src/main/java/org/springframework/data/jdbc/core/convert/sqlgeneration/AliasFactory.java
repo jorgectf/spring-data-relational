@@ -16,30 +16,32 @@
 
 package org.springframework.data.jdbc.core.convert.sqlgeneration;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.springframework.data.mapping.PersistentPropertyPath;
 import org.springframework.data.relational.core.mapping.PersistentPropertyPathExtension;
 import org.springframework.data.relational.core.mapping.RelationalPersistentProperty;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class AliasFactory {
 	private final Map<PersistentPropertyPathExtension, String> cache = new ConcurrentHashMap<>();
 	private int counter = 0;
 
+	private static String sanatize(String name) {
+		return name.replaceAll("[^\\w]", "");
+	}
+
 	public String getAlias(PersistentPropertyPathExtension path) {
-		return cache.computeIfAbsent(path, p -> createAlias(p));
+		return cache.computeIfAbsent(path, this::createAlias);
 	}
 
 	private String createAlias(PersistentPropertyPathExtension path) {
 
-		counter++;
+		String prefix = path.isEntity() ? "t_" : "c_";
 
-		String prefix = path.isEntity() ? "T_" : "C_";
+		String name = getName(path);
 
-		String name = path.isEntity() ? path.getTableName().getReference() : path.getColumnName().getReference();
-
-		return prefix + name + "_" + counter;
+		return prefix + name + "_" + ++counter;
 
 	}
 
@@ -48,9 +50,18 @@ public class AliasFactory {
 	}
 
 	public String getRowNumberAlias(PersistentPropertyPathExtension path) {
-		if (path.getLength() == 0) {
-			return "RN_root";
-		}
-		return "RN_" + path.getTableName();
+		return cache.computeIfAbsent(path, this::createRowNumberAlias);
+
+	}
+	public String createRowNumberAlias(PersistentPropertyPathExtension path) {
+		return "rn_" + getName(path) + "_" + ++counter;
+	}
+
+	private static String getName(PersistentPropertyPathExtension path) {
+		return sanatize( //
+				path.isEntity() //
+						? path.getTableName().getReference() //
+						: path.getColumnName().getReference()) //
+				.toLowerCase();
 	}
 }
