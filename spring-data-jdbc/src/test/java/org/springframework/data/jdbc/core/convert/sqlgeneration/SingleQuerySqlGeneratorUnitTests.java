@@ -90,6 +90,31 @@ class SingleQuerySqlGeneratorUnitTests {
 				.hasWhere("\"simple_entity\".\"id\" = :id")
 		;
 	}
+	@Test
+	void createSelectForTrivialAggregateAllByIds() {
+
+		SingleQuerySqlGenerator sqlGenerator = new SingleQuerySqlGenerator(context, dialect, context.getRequiredPersistentEntity(SimpleEntity.class));
+		AliasFactory aliases = sqlGenerator.getAliasFactory();
+
+		String sql = sqlGenerator.findById();
+
+		System.out.println(sql);
+
+		assertThatParsed(sql) //
+				.hasExactlyColumns( //
+						aliases.getRowNumberAlias(path()), //
+						aliases.getAlias(path( "id")), //
+						aliases.getAlias(path( "name")) //
+				) //
+				.hasInlineViewSelectingFrom("\"simple_entity\"") //
+				.hasExactlyColumns( //
+						lit(1).as(aliases.getRowNumberAlias(path())) , //
+						col("\"id\"").as(aliases.getAlias(path( "id"))), //
+						col("\"name\"").as(aliases.getAlias(path( "name"))) //
+				)
+				.hasWhere("\"simple_entity\".\"id\" in (:ids)")
+		;
+	}
 
 	private PersistentPropertyPathExtension path() {
 		return new PersistentPropertyPathExtension(context,context.getRequiredPersistentEntity(SimpleEntity.class));

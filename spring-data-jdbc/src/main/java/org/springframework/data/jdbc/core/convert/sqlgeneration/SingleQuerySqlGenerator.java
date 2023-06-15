@@ -50,20 +50,31 @@ public class SingleQuerySqlGenerator {
 	}
 
 	public String findAll() {
+
 		return createSelect(null);
 	}
 
 	public String findById() {
 
-		PersistentPropertyPathExtension idPPPE = new PersistentPropertyPathExtension(context, aggregate).extendBy(aggregate.getIdProperty());
+		PersistentPropertyPathExtension idPPPE = getIdPersistentPropertyPathExtension();
 		Condition condition = Conditions.isEqual(
 				table.column(idPPPE.getColumnName()),
 				Expressions.just(":id"));
+
 		return createSelect(condition);
 	}
 
 	public String findAllById() {
-		return createSelect(null);
+		PersistentPropertyPathExtension idPPPE = getIdPersistentPropertyPathExtension();
+		Condition condition = Conditions.in(
+				table.column(idPPPE.getColumnName()),
+				Expressions.just(":ids"));
+
+		return createSelect(condition);
+	}
+
+	private PersistentPropertyPathExtension getIdPersistentPropertyPathExtension() {
+		return new PersistentPropertyPathExtension(context, aggregate).extendBy(aggregate.getIdProperty());
 	}
 
 	private String createSelect(Condition condition) {
